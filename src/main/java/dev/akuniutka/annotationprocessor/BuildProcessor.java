@@ -4,11 +4,9 @@ import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.ExecutableType;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,25 +16,18 @@ import java.util.stream.Collectors;
 public class BuildProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Set<? extends Element> elementsAnnotatedWith = roundEnv.getElementsAnnotatedWith(BuilderField.class);
-        Map<Boolean, List<Element>> annotatedMethods = elementsAnnotatedWith.stream()
-                .collect(Collectors.partitioningBy(
-                        element -> ((ExecutableType) element.asType()).getParameterTypes().size() == 1
-                                        && element.getSimpleName().toString().startsWith("set")
-
-                ));
-        List<Element> setters = annotatedMethods.get(true);
-        if (setters.size() > 0) {
-            Map<String, Map<String, String>> settersMap = setters.stream().collect(Collectors.groupingBy(
-                    element -> ((TypeElement) element.getEnclosingElement()).getQualifiedName().toString(),
-                    Collectors.toMap(
-                            setter -> setter.getSimpleName().toString(),
-                            setter -> ((ExecutableType) setter.asType()).getParameterTypes().get(0).toString()
-                    )
-            ));
+        Set<? extends Element> fields = roundEnv.getElementsAnnotatedWith(BuilderField.class);
+        if (fields.size() > 0) {
+             Map<String, Map<String, String>> fieldsMap = fields.stream().collect(Collectors.groupingBy(
+                     field -> ((TypeElement) field.getEnclosingElement()).getQualifiedName().toString(),
+                     Collectors.toMap(
+                             field -> field.getSimpleName().toString(),
+                             field -> field.asType().toString()
+                     )
+             ));
 
             try {
-               createBuilderClassesNew(settersMap);
+               createBuilderClasses(fieldsMap);
             } catch (IOException exception) {
                 exception.printStackTrace();
             }
@@ -47,13 +38,13 @@ public class BuildProcessor extends AbstractProcessor {
         }
     }
 
-    private void createBuilderClassesNew(Map<String, Map<String, String>> settersMap) throws IOException {
-        for (Map.Entry<String, Map<String, String>> entry : settersMap.entrySet()) {
-            createBuilderClass(entry.getKey(), entry.getValue());
+    private void createBuilderClasses(Map<String, Map<String, String>> fieldsMap) throws IOException {
+        for (Map.Entry<String, Map<String, String>> entry : fieldsMap.entrySet()) {
+            createBuilderClassNew(entry.getKey(), entry.getValue());
         }
     }
 
-    private void createBuilderClass(String className, Map<String, String> settersMap) throws IOException {
+    private void createBuilderClassNew(String className, Map<String, String> fields) throws IOException {
         String packageName = null;
         int lastDot = className.lastIndexOf('.');
         if (lastDot > 0) {
@@ -70,12 +61,15 @@ public class BuildProcessor extends AbstractProcessor {
             out.printf("public class %s {%n", builderSimpleClassName);
             out.printf("    private %s object = new %s();%n%n", simpleClassName, simpleClassName);
             out.printf("    public %s build() {%n        return object;%n    }%n", simpleClassName);
-            settersMap.forEach((methodName, argumentType) -> {
-                out.printf("%n    public %s %s(%s value) {%n", builderSimpleClassName, methodName, argumentType);
-                out.printf("        object.%s(value);%n        return this;%n    }%n", methodName);
-
+            fields.forEach((fieldName, fieldType) -> {
+                out.printf("%n    public %s set%s(%s value) {%n", builderSimpleClassName, capitalize(fieldName), fieldType);
+                out.printf("        object.%s = value;%n        return this;%n    }%n", fieldName);
             });
             out.println('}');
         }
+    }
+
+    private String capitalize(String str) {
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }
