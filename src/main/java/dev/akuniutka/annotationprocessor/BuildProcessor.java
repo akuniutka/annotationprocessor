@@ -27,14 +27,16 @@ public class BuildProcessor extends AbstractProcessor {
                 ));
         List<Element> setters = annotatedMethods.get(true);
         if (setters.size() > 0) {
-            String className = ((TypeElement) setters.get(0).getEnclosingElement()).getQualifiedName().toString();
-            Map<String, String> setterMap = setters.stream().collect(Collectors.toMap(
-                    setter -> setter.getSimpleName().toString(),
-                    setter -> ((ExecutableType) setter.asType()).getParameterTypes().get(0).toString()
+            Map<String, Map<String, String>> settersMap = setters.stream().collect(Collectors.groupingBy(
+                    element -> ((TypeElement) element.getEnclosingElement()).getQualifiedName().toString(),
+                    Collectors.toMap(
+                            setter -> setter.getSimpleName().toString(),
+                            setter -> ((ExecutableType) setter.asType()).getParameterTypes().get(0).toString()
+                    )
             ));
 
             try {
-                createBuilderClass(className, setterMap);
+               createBuilderClassesNew(settersMap);
             } catch (IOException exception) {
                 exception.printStackTrace();
             }
@@ -45,53 +47,33 @@ public class BuildProcessor extends AbstractProcessor {
         }
     }
 
-    private void createBuilderClass(String classMame, Map<String, String> settersMap) throws IOException {
-        String packageName = null;
-        int lastDot = classMame.lastIndexOf('.');
-        if (lastDot > 0) {
-            packageName = classMame.substring(0, lastDot);
+    private void createBuilderClassesNew(Map<String, Map<String, String>> settersMap) throws IOException {
+        for (Map.Entry<String, Map<String, String>> entry : settersMap.entrySet()) {
+            createBuilderClass(entry.getKey(), entry.getValue());
         }
-        String simpleClassName = classMame.substring(lastDot + 1);
-        String builderClassName = classMame + "Builder";
+    }
+
+    private void createBuilderClass(String className, Map<String, String> settersMap) throws IOException {
+        String packageName = null;
+        int lastDot = className.lastIndexOf('.');
+        if (lastDot > 0) {
+            packageName = className.substring(0, lastDot);
+        }
+        String simpleClassName = className.substring(lastDot + 1);
+        String builderClassName = className + "Builder";
         String builderSimpleClassName = builderClassName.substring(lastDot + 1);
         JavaFileObject builderFile = processingEnv.getFiler().createSourceFile(builderClassName);
         try (PrintWriter out = new PrintWriter(builderFile.openWriter())) {
             if (packageName != null) {
-                out.print("package ");
-                out.print(packageName);
-                out.println(';');
-                out.println();
+                out.printf("package %s;%n%n", packageName);
             }
-            out.print("public class ");
-            out.print(builderSimpleClassName);
-            out.println(" {");
-            out.println();
-            out.print("    private ");
-            out.print(simpleClassName);
-            out.print(" object = new ");
-            out.print(simpleClassName);
-            out.println("();");
-            out.println();
-            out.print("    public ");
-            out.print(simpleClassName);
-            out.println(" build() {");
-            out.println("        return object;");
-            out.println("    }");
-            out.println();
+            out.printf("public class %s {%n", builderSimpleClassName);
+            out.printf("    private %s object = new %s();%n%n", simpleClassName, simpleClassName);
+            out.printf("    public %s build() {%n        return object;%n    }%n", simpleClassName);
             settersMap.forEach((methodName, argumentType) -> {
-                out.print("    public ");
-                out.print(builderSimpleClassName);
-                out.print(" ");
-                out.print(methodName);
-                out.print("(");
-                out.print(argumentType);
-                out.println(" value) {");
-                out.print("        object.");
-                out.print(methodName);
-                out.println("(value);");
-                out.println("        return this;");
-                out.println("    }");
-                out.println();
+                out.printf("%n    public %s %s(%s value) {%n", builderSimpleClassName, methodName, argumentType);
+                out.printf("        object.%s(value);%n        return this;%n    }%n", methodName);
+
             });
             out.println('}');
         }
