@@ -64,7 +64,7 @@ public class BuildProcessor extends AbstractProcessor {
             out.printf("    public %s build() {%n        return object;%n    }%n", simpleClassName);
             fields.forEach(field -> {
                 out.printf("%n    public %s %s(%s value) {%n", builderSimpleClassName, field.getSetterName(), field.getType());
-                out.printf("        object.%s = value;%n        return this;%n    }%n", field.getName());
+                out.printf("        object.%s(value);%n        return this;%n    }%n", field.getSetterName());
             });
             out.println('}');
         }
