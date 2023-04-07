@@ -7,6 +7,7 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,11 +19,11 @@ public class BuildProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<? extends Element> fields = roundEnv.getElementsAnnotatedWith(BuilderField.class);
         if (fields.size() > 0) {
-             Map<String, Map<String, String>> fieldsMap = fields.stream().collect(Collectors.groupingBy(
+             Map<String, List<Field>> fieldsMap = fields.stream().collect(Collectors.groupingBy(
                      field -> ((TypeElement) field.getEnclosingElement()).getQualifiedName().toString(),
-                     Collectors.toMap(
-                             field -> field.getSimpleName().toString(),
-                             field -> field.asType().toString()
+                     Collectors.mapping(
+                             field -> new Field(field.getSimpleName().toString(), field.asType().toString()),
+                             Collectors.toList()
                      )
              ));
 
@@ -38,13 +39,13 @@ public class BuildProcessor extends AbstractProcessor {
         }
     }
 
-    private void createBuilderClasses(Map<String, Map<String, String>> fieldsMap) throws IOException {
-        for (Map.Entry<String, Map<String, String>> entry : fieldsMap.entrySet()) {
+    private void createBuilderClasses(Map<String, List<Field>> fieldsMap) throws IOException {
+        for (Map.Entry<String, List<Field>> entry : fieldsMap.entrySet()) {
             createBuilderClassNew(entry.getKey(), entry.getValue());
         }
     }
 
-    private void createBuilderClassNew(String className, Map<String, String> fields) throws IOException {
+    private void createBuilderClassNew(String className, List<Field> fields) throws IOException {
         String packageName = null;
         int lastDot = className.lastIndexOf('.');
         if (lastDot > 0) {
@@ -61,15 +62,11 @@ public class BuildProcessor extends AbstractProcessor {
             out.printf("public class %s {%n", builderSimpleClassName);
             out.printf("    private %s object = new %s();%n%n", simpleClassName, simpleClassName);
             out.printf("    public %s build() {%n        return object;%n    }%n", simpleClassName);
-            fields.forEach((fieldName, fieldType) -> {
-                out.printf("%n    public %s set%s(%s value) {%n", builderSimpleClassName, capitalize(fieldName), fieldType);
-                out.printf("        object.%s = value;%n        return this;%n    }%n", fieldName);
+            fields.forEach(field -> {
+                out.printf("%n    public %s %s(%s value) {%n", builderSimpleClassName, field.getSetterName(), field.getType());
+                out.printf("        object.%s = value;%n        return this;%n    }%n", field.getName());
             });
             out.println('}');
         }
-    }
-
-    private String capitalize(String str) {
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }
