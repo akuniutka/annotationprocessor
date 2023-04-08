@@ -1,12 +1,18 @@
 package dev.akuniutka.annotationprocessor;
 
-public class Field implements Cloneable {
-    private String name;
-    private String type;
+public class Field {
+    private final String className;
+    private final String name;
+    private final String type;
 
-    public Field(String name, String type) {
+    public Field(String className, String name, String type) {
+        this.className = className;
         this.name = name;
         this.type = type;
+    }
+
+    public String getClassName() {
+        return className;
     }
 
     public String getName() {
@@ -18,15 +24,17 @@ public class Field implements Cloneable {
     }
 
     @Override
-    public Field clone() {
-        final Field clone;
-        try {
-            clone = (Field) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("superclass mess up", e);
-        }
-        clone.name = name;
-        clone.type = type;
-        return clone;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Field field = (Field) o;
+        return className.equals(field.className) && name.equals(field.name);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = className.hashCode();
+        result = 31 * result + name.hashCode();
+        return result;
     }
 }
