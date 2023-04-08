@@ -3,18 +3,18 @@ package dev.akuniutka.annotationprocessor;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class Class {
+class Class {
     private String name;
     private String packageName;
     private String classSimpleName;
     private String className;
     private final Set<Field> fields = new LinkedHashSet<>();
 
-    public String getQualifiedName() {
+    String getQualifiedName() {
         return (packageName == null ? "" : packageName + ".") + name;
     }
 
-    public void addField(Field field) {
+    void addField(Field field) {
         if (fields.isEmpty()) {
             className = field.getClassName();
             int lastDot = className.lastIndexOf('.');
@@ -31,7 +31,7 @@ public class Class {
         fields.add(field);
     }
 
-    public Class merge(Class anotherClass) {
+    Class merge(Class anotherClass) {
         for (Field field : anotherClass.fields) {
             if (fields.contains(field)) {
                 throw new IllegalArgumentException("duplicate field " + field.getClassName() + ":" + field.getName());
@@ -41,8 +41,7 @@ public class Class {
         return this;
     }
 
-    @Override
-    public String toString() {
+    String getCode() {
         StringBuilder result = new StringBuilder();
         if (packageName != null) {
             result.append("package ").append(packageName).append(";\n\n");

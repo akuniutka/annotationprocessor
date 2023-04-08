@@ -26,7 +26,7 @@ public class BuilderFieldProcessor extends AbstractProcessor {
             try {
                 JavaFileObject file = processingEnv.getFiler().createSourceFile(c.getQualifiedName());
                 try (PrintWriter out = new PrintWriter(file.openWriter())) {
-                    out.print(c);
+                    out.print(c.getCode());
                 }
             } catch (IOException exception) {
                 exception.printStackTrace();

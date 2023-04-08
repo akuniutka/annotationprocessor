@@ -1,13 +1,13 @@
 package dev.akuniutka.annotationprocessor;
 
-public class Setter {
+class Setter {
     private final Field field;
 
-    public Setter(Field field) {
+    Setter(Field field) {
         this.field = field;
     }
 
-    public String getName() {
+    String getName() {
         String fieldName = field.getName();
         return "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }

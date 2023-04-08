@@ -1,25 +1,25 @@
 package dev.akuniutka.annotationprocessor;
 
-public class Field {
+class Field {
     private final String className;
     private final String name;
     private final String type;
 
-    public Field(String className, String name, String type) {
+    Field(String className, String name, String type) {
         this.className = className;
         this.name = name;
         this.type = type;
     }
 
-    public String getClassName() {
+    String getClassName() {
         return className;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
-    public String getType() {
+    String getType() {
         return type;
     }
 
