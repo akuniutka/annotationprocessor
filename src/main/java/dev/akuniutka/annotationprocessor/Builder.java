@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
-public class ClassBuilder {
+public class Builder {
     private final Set<Field> fields = new LinkedHashSet<>();
 
     public void addFieldFromElement(Element element) {
@@ -20,7 +20,7 @@ public class ClassBuilder {
         fields.add(field);
     }
 
-    public void merge(ClassBuilder anotherBuilder) {
+    public void merge(Builder anotherBuilder) {
         for (Field field : anotherBuilder.fields) {
             if (fields.contains(field)) {
                 throw new IllegalArgumentException("duplicate field " + field.getClassName() + ":" + field.getName());
