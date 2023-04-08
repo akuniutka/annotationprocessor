@@ -1,8 +1,8 @@
 package dev.akuniutka.annotationprocessor;
 
-public class Field {
-    private final String name;
-    private final String type;
+public class Field implements Cloneable {
+    private String name;
+    private String type;
 
     public Field(String name, String type) {
         this.name = name;
@@ -17,7 +17,16 @@ public class Field {
         return type;
     }
 
-    public String getSetterName() {
-        return "set" + name.substring(0, 1).toUpperCase() + name.substring(1);
+    @Override
+    public Field clone() {
+        final Field clone;
+        try {
+            clone = (Field) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("superclass mess up", e);
+        }
+        clone.name = name;
+        clone.type = type;
+        return clone;
     }
 }
