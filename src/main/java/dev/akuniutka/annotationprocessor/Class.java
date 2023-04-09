@@ -5,9 +5,9 @@ import java.util.Set;
 
 class Class {
     private String name;
+    private String className;
     private String packageName;
     private String classSimpleName;
-    private String className;
     private final Set<Field> fields = new LinkedHashSet<>();
 
     String getQualifiedName() {
@@ -32,11 +32,18 @@ class Class {
     }
 
     Class merge(Class anotherClass) {
-        for (Field field : anotherClass.fields) {
-            if (fields.contains(field)) {
-                throw new IllegalArgumentException("duplicate field " + field.getClassName() + ":" + field.getName());
+        if (!anotherClass.fields.isEmpty()) {
+            if (fields.isEmpty()) {
+                name = anotherClass.name;
+                className = anotherClass.className;
+                packageName = anotherClass.packageName;
+                classSimpleName = anotherClass.classSimpleName;
+            } else if (!className.equals(anotherClass.className)) {
+                throw new IllegalArgumentException("parts being merged belong to different classes");
+            } else if (anotherClass.fields.stream().anyMatch(fields::contains)) {
+                throw new IllegalArgumentException("fields duplicates found");
             }
-            fields.add(field);
+            fields.addAll(anotherClass.fields);
         }
         return this;
     }
@@ -46,12 +53,11 @@ class Class {
         if (packageName != null) {
             result.append("package ").append(packageName).append(";\n\n");
         }
-        result
-                .append("public class ").append(name).append(" {\n")
-                .append(String.format("    private %s object = new %s();%n%n", classSimpleName, classSimpleName))
-                .append("    public ").append(classSimpleName).append(" build() {\n")
-                .append("        return object;\n")
-                .append("    }\n");
+        result.append("public class ").append(name).append(" {\n");
+        result.append(String.format("    private %s object = new %s();%n%n", classSimpleName, classSimpleName));
+        result.append("    public ").append(classSimpleName).append(" build() {\n");
+        result.append("        return object;\n");
+        result.append("    }\n");
         for (Field field : fields) {
             Setter setter = new Setter(field);
             result.append(String.format("%n    public %s %s(%s value) {%n", name, setter, field.getType()))

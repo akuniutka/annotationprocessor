@@ -1,5 +1,7 @@
 package dev.akuniutka.annotationprocessor;
 
+import java.util.Objects;
+
 class Field {
     private final String className;
     private final String name;
@@ -33,8 +35,6 @@ class Field {
 
     @Override
     public int hashCode() {
-        int result = className.hashCode();
-        result = 31 * result + name.hashCode();
-        return result;
+        return Objects.hash(className, name);
     }
 }

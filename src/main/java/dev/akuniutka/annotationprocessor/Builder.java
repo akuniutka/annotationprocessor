@@ -21,12 +21,10 @@ class Builder {
     }
 
     void merge(Builder anotherBuilder) {
-        for (Field field : anotherBuilder.fields) {
-            if (fields.contains(field)) {
-                throw new IllegalArgumentException("duplicate field " + field.getClassName() + ":" + field.getName());
-            }
-            fields.add(field);
+        if (anotherBuilder.fields.stream().anyMatch(fields::contains)) {
+            throw new IllegalArgumentException("fields duplicates found");
         }
+        fields.addAll(anotherBuilder.fields);
     }
 
     Collection<Class> getClasses() {
